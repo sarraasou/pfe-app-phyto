@@ -10,6 +10,7 @@ export type User = {
   id: string;
   isValid: boolean | null;
   lastName: string | null;
+  password: string;
   projects?: Array<Project>;
   roles: string | null;
   updatedAt: Date;

@@ -8,6 +8,7 @@ export type UserCreateInput = {
   firstName?: string | null;
   isValid?: boolean | null;
   lastName?: string | null;
+  password: string;
   projects?: ProjectCreateNestedManyWithoutUsersInput;
   roles?: string | null;
   userRole?: string | null;

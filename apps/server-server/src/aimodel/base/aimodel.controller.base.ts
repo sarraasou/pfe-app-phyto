@@ -16,7 +16,11 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { AimodelService } from "../aimodel.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { AimodelCreateInput } from "./AimodelCreateInput";
 import { Aimodel } from "./Aimodel";
 import { AimodelFindManyArgs } from "./AimodelFindManyArgs";
@@ -26,10 +30,24 @@ import { AnnotationFindManyArgs } from "../../annotation/base/AnnotationFindMany
 import { Annotation } from "../../annotation/base/Annotation";
 import { AnnotationWhereUniqueInput } from "../../annotation/base/AnnotationWhereUniqueInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class AimodelControllerBase {
-  constructor(protected readonly service: AimodelService) {}
+  constructor(
+    protected readonly service: AimodelService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: Aimodel })
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createAimodel(
     @common.Body() data: AimodelCreateInput
   ): Promise<Aimodel> {
@@ -45,9 +63,18 @@ export class AimodelControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [Aimodel] })
   @ApiNestedQuery(AimodelFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async aimodels(@common.Req() request: Request): Promise<Aimodel[]> {
     const args = plainToClass(AimodelFindManyArgs, request.query);
     return this.service.aimodels({
@@ -62,9 +89,18 @@ export class AimodelControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: Aimodel })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async aimodel(
     @common.Param() params: AimodelWhereUniqueInput
   ): Promise<Aimodel | null> {
@@ -86,9 +122,18 @@ export class AimodelControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: Aimodel })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateAimodel(
     @common.Param() params: AimodelWhereUniqueInput,
     @common.Body() data: AimodelUpdateInput
@@ -118,6 +163,14 @@ export class AimodelControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: Aimodel })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteAimodel(
     @common.Param() params: AimodelWhereUniqueInput
   ): Promise<Aimodel | null> {
@@ -142,8 +195,14 @@ export class AimodelControllerBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id/annotations")
   @ApiNestedQuery(AnnotationFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "any",
+  })
   async findAnnotations(
     @common.Req() request: Request,
     @common.Param() params: AimodelWhereUniqueInput
@@ -181,6 +240,11 @@ export class AimodelControllerBase {
   }
 
   @common.Post("/:id/annotations")
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "update",
+    possession: "any",
+  })
   async connectAnnotations(
     @common.Param() params: AimodelWhereUniqueInput,
     @common.Body() body: AnnotationWhereUniqueInput[]
@@ -198,6 +262,11 @@ export class AimodelControllerBase {
   }
 
   @common.Patch("/:id/annotations")
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "update",
+    possession: "any",
+  })
   async updateAnnotations(
     @common.Param() params: AimodelWhereUniqueInput,
     @common.Body() body: AnnotationWhereUniqueInput[]
@@ -215,6 +284,11 @@ export class AimodelControllerBase {
   }
 
   @common.Delete("/:id/annotations")
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "update",
+    possession: "any",
+  })
   async disconnectAnnotations(
     @common.Param() params: AimodelWhereUniqueInput,
     @common.Body() body: AnnotationWhereUniqueInput[]

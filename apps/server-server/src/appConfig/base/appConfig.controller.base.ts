@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { AppConfigService } from "../appConfig.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { AppConfigCreateInput } from "./AppConfigCreateInput";
 import { AppConfig } from "./AppConfig";
 import { AppConfigFindManyArgs } from "./AppConfigFindManyArgs";
 import { AppConfigWhereUniqueInput } from "./AppConfigWhereUniqueInput";
 import { AppConfigUpdateInput } from "./AppConfigUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class AppConfigControllerBase {
-  constructor(protected readonly service: AppConfigService) {}
+  constructor(
+    protected readonly service: AppConfigService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: AppConfig })
+  @nestAccessControl.UseRoles({
+    resource: "AppConfig",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createAppConfig(
     @common.Body() data: AppConfigCreateInput
   ): Promise<AppConfig> {
@@ -42,9 +60,18 @@ export class AppConfigControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [AppConfig] })
   @ApiNestedQuery(AppConfigFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "AppConfig",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async appConfigs(@common.Req() request: Request): Promise<AppConfig[]> {
     const args = plainToClass(AppConfigFindManyArgs, request.query);
     return this.service.appConfigs({
@@ -59,9 +86,18 @@ export class AppConfigControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: AppConfig })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AppConfig",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async appConfig(
     @common.Param() params: AppConfigWhereUniqueInput
   ): Promise<AppConfig | null> {
@@ -83,9 +119,18 @@ export class AppConfigControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: AppConfig })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AppConfig",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateAppConfig(
     @common.Param() params: AppConfigWhereUniqueInput,
     @common.Body() data: AppConfigUpdateInput
@@ -115,6 +160,14 @@ export class AppConfigControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: AppConfig })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AppConfig",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteAppConfig(
     @common.Param() params: AppConfigWhereUniqueInput
   ): Promise<AppConfig | null> {

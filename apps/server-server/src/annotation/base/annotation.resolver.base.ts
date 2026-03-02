@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Annotation } from "./Annotation";
 import { AnnotationCountArgs } from "./AnnotationCountArgs";
 import { AnnotationFindManyArgs } from "./AnnotationFindManyArgs";
@@ -25,10 +31,20 @@ import { Aimodel } from "../../aimodel/base/Aimodel";
 import { Image } from "../../image/base/Image";
 import { User } from "../../user/base/User";
 import { AnnotationService } from "../annotation.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => Annotation)
 export class AnnotationResolverBase {
-  constructor(protected readonly service: AnnotationService) {}
+  constructor(
+    protected readonly service: AnnotationService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "any",
+  })
   async _annotationsMeta(
     @graphql.Args() args: AnnotationCountArgs
   ): Promise<MetaQueryPayload> {
@@ -38,14 +54,26 @@ export class AnnotationResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [Annotation])
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "any",
+  })
   async annotations(
     @graphql.Args() args: AnnotationFindManyArgs
   ): Promise<Annotation[]> {
     return this.service.annotations(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => Annotation, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "own",
+  })
   async annotation(
     @graphql.Args() args: AnnotationFindUniqueArgs
   ): Promise<Annotation | null> {
@@ -56,7 +84,13 @@ export class AnnotationResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Annotation)
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "create",
+    possession: "any",
+  })
   async createAnnotation(
     @graphql.Args() args: CreateAnnotationArgs
   ): Promise<Annotation> {
@@ -78,7 +112,13 @@ export class AnnotationResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Annotation)
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "update",
+    possession: "any",
+  })
   async updateAnnotation(
     @graphql.Args() args: UpdateAnnotationArgs
   ): Promise<Annotation | null> {
@@ -110,6 +150,11 @@ export class AnnotationResolverBase {
   }
 
   @graphql.Mutation(() => Annotation)
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "delete",
+    possession: "any",
+  })
   async deleteAnnotation(
     @graphql.Args() args: DeleteAnnotationArgs
   ): Promise<Annotation | null> {
@@ -125,7 +170,13 @@ export class AnnotationResolverBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => [Aimodel], { name: "aiModel" })
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "read",
+    possession: "any",
+  })
   async findAiModel(
     @graphql.Parent() parent: Annotation,
     @graphql.Args() args: AimodelFindManyArgs
@@ -139,9 +190,15 @@ export class AnnotationResolverBase {
     return results;
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => Image, {
     nullable: true,
     name: "image",
+  })
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "read",
+    possession: "any",
   })
   async getImage(@graphql.Parent() parent: Annotation): Promise<Image | null> {
     const result = await this.service.getImage(parent.id);
@@ -152,9 +209,15 @@ export class AnnotationResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => User, {
     nullable: true,
     name: "validatedBy",
+  })
+  @nestAccessControl.UseRoles({
+    resource: "User",
+    action: "read",
+    possession: "any",
   })
   async getValidatedBy(
     @graphql.Parent() parent: Annotation

@@ -15,6 +15,7 @@ model User {
   id            String         @id @default(cuid())
   isValid       Boolean?
   lastName      String?
+  password      String
   projects      Project[]
   roles         String?
   updatedAt     DateTime       @updatedAt
@@ -83,4 +84,10 @@ model Collaborator {
   projectId String
   updatedAt DateTime @updatedAt
   user      User[]
+}
+
+model AuthModel {
+  createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  updatedAt DateTime @updatedAt
 }
