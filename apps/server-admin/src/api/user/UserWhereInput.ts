@@ -12,6 +12,7 @@ export type UserWhereInput = {
   id?: StringFilter;
   isValid?: BooleanNullableFilter;
   lastName?: StringNullableFilter;
+  password?: StringFilter;
   projects?: ProjectListRelationFilter;
   roles?: StringNullableFilter;
   userRole?: StringNullableFilter;

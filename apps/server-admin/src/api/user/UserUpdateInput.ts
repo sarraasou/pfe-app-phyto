@@ -8,6 +8,7 @@ export type UserUpdateInput = {
   firstName?: string | null;
   isValid?: boolean | null;
   lastName?: string | null;
+  password?: string;
   projects?: ProjectUpdateManyWithoutUsersInput;
   roles?: string | null;
   userRole?: string | null;

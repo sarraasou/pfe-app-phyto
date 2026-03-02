@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Image } from "./Image";
 import { ImageCountArgs } from "./ImageCountArgs";
 import { ImageFindManyArgs } from "./ImageFindManyArgs";
@@ -24,10 +30,20 @@ import { AnnotationFindManyArgs } from "../../annotation/base/AnnotationFindMany
 import { Annotation } from "../../annotation/base/Annotation";
 import { Project } from "../../project/base/Project";
 import { ImageService } from "../image.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => Image)
 export class ImageResolverBase {
-  constructor(protected readonly service: ImageService) {}
+  constructor(
+    protected readonly service: ImageService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "read",
+    possession: "any",
+  })
   async _imagesMeta(
     @graphql.Args() args: ImageCountArgs
   ): Promise<MetaQueryPayload> {
@@ -37,12 +53,24 @@ export class ImageResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [Image])
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "read",
+    possession: "any",
+  })
   async images(@graphql.Args() args: ImageFindManyArgs): Promise<Image[]> {
     return this.service.images(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => Image, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "read",
+    possession: "own",
+  })
   async image(
     @graphql.Args() args: ImageFindUniqueArgs
   ): Promise<Image | null> {
@@ -53,7 +81,13 @@ export class ImageResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Image)
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "create",
+    possession: "any",
+  })
   async createImage(@graphql.Args() args: CreateImageArgs): Promise<Image> {
     return await this.service.createImage({
       ...args,
@@ -67,7 +101,13 @@ export class ImageResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Image)
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "update",
+    possession: "any",
+  })
   async updateImage(
     @graphql.Args() args: UpdateImageArgs
   ): Promise<Image | null> {
@@ -93,6 +133,11 @@ export class ImageResolverBase {
   }
 
   @graphql.Mutation(() => Image)
+  @nestAccessControl.UseRoles({
+    resource: "Image",
+    action: "delete",
+    possession: "any",
+  })
   async deleteImage(
     @graphql.Args() args: DeleteImageArgs
   ): Promise<Image | null> {
@@ -108,7 +153,13 @@ export class ImageResolverBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => [Annotation], { name: "annotations" })
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "any",
+  })
   async findAnnotations(
     @graphql.Parent() parent: Image,
     @graphql.Args() args: AnnotationFindManyArgs
@@ -122,9 +173,15 @@ export class ImageResolverBase {
     return results;
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => Project, {
     nullable: true,
     name: "project",
+  })
+  @nestAccessControl.UseRoles({
+    resource: "Project",
+    action: "read",
+    possession: "any",
   })
   async getProject(@graphql.Parent() parent: Image): Promise<Project | null> {
     const result = await this.service.getProject(parent.id);

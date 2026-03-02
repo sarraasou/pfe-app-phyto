@@ -16,7 +16,11 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { AnnotationService } from "../annotation.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { AnnotationCreateInput } from "./AnnotationCreateInput";
 import { Annotation } from "./Annotation";
 import { AnnotationFindManyArgs } from "./AnnotationFindManyArgs";
@@ -26,10 +30,24 @@ import { AimodelFindManyArgs } from "../../aimodel/base/AimodelFindManyArgs";
 import { Aimodel } from "../../aimodel/base/Aimodel";
 import { AimodelWhereUniqueInput } from "../../aimodel/base/AimodelWhereUniqueInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class AnnotationControllerBase {
-  constructor(protected readonly service: AnnotationService) {}
+  constructor(
+    protected readonly service: AnnotationService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: Annotation })
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createAnnotation(
     @common.Body() data: AnnotationCreateInput
   ): Promise<Annotation> {
@@ -70,9 +88,18 @@ export class AnnotationControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [Annotation] })
   @ApiNestedQuery(AnnotationFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async annotations(@common.Req() request: Request): Promise<Annotation[]> {
     const args = plainToClass(AnnotationFindManyArgs, request.query);
     return this.service.annotations({
@@ -100,9 +127,18 @@ export class AnnotationControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: Annotation })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async annotation(
     @common.Param() params: AnnotationWhereUniqueInput
   ): Promise<Annotation | null> {
@@ -137,9 +173,18 @@ export class AnnotationControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: Annotation })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateAnnotation(
     @common.Param() params: AnnotationWhereUniqueInput,
     @common.Body() data: AnnotationUpdateInput
@@ -194,6 +239,14 @@ export class AnnotationControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: Annotation })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteAnnotation(
     @common.Param() params: AnnotationWhereUniqueInput
   ): Promise<Annotation | null> {
@@ -231,8 +284,14 @@ export class AnnotationControllerBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id/aiModel")
   @ApiNestedQuery(AimodelFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Aimodel",
+    action: "read",
+    possession: "any",
+  })
   async findAiModel(
     @common.Req() request: Request,
     @common.Param() params: AnnotationWhereUniqueInput
@@ -257,6 +316,11 @@ export class AnnotationControllerBase {
   }
 
   @common.Post("/:id/aiModel")
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "update",
+    possession: "any",
+  })
   async connectAiModel(
     @common.Param() params: AnnotationWhereUniqueInput,
     @common.Body() body: AimodelWhereUniqueInput[]
@@ -274,6 +338,11 @@ export class AnnotationControllerBase {
   }
 
   @common.Patch("/:id/aiModel")
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "update",
+    possession: "any",
+  })
   async updateAiModel(
     @common.Param() params: AnnotationWhereUniqueInput,
     @common.Body() body: AimodelWhereUniqueInput[]
@@ -291,6 +360,11 @@ export class AnnotationControllerBase {
   }
 
   @common.Delete("/:id/aiModel")
+  @nestAccessControl.UseRoles({
+    resource: "Annotation",
+    action: "update",
+    possession: "any",
+  })
   async disconnectAiModel(
     @common.Param() params: AnnotationWhereUniqueInput,
     @common.Body() body: AimodelWhereUniqueInput[]

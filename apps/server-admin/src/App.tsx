@@ -33,6 +33,10 @@ import { CollaboratorList } from "./collaborator/CollaboratorList";
 import { CollaboratorCreate } from "./collaborator/CollaboratorCreate";
 import { CollaboratorEdit } from "./collaborator/CollaboratorEdit";
 import { CollaboratorShow } from "./collaborator/CollaboratorShow";
+import { AuthModelList } from "./authModel/AuthModelList";
+import { AuthModelCreate } from "./authModel/AuthModelCreate";
+import { AuthModelEdit } from "./authModel/AuthModelEdit";
+import { AuthModelShow } from "./authModel/AuthModelShow";
 import { jwtAuthProvider } from "./auth-provider/ra-auth-jwt";
 
 const App = (): React.ReactElement => {
@@ -94,6 +98,13 @@ const App = (): React.ReactElement => {
           edit={CollaboratorEdit}
           create={CollaboratorCreate}
           show={CollaboratorShow}
+        />
+        <Resource
+          name="AuthModel"
+          list={AuthModelList}
+          edit={AuthModelEdit}
+          create={AuthModelCreate}
+          show={AuthModelShow}
         />
       </Admin>
     </div>

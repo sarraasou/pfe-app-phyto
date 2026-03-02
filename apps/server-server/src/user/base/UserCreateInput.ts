@@ -85,6 +85,15 @@ class UserCreateInput {
   lastName?: string | null;
 
   @ApiProperty({
+    required: true,
+    type: String,
+  })
+  @IsString()
+  @MaxLength(1000)
+  @Field(() => String)
+  password!: string;
+
+  @ApiProperty({
     required: false,
     type: () => ProjectCreateNestedManyWithoutUsersInput,
   })
